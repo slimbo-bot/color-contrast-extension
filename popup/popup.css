@@ -1,4 +1,4 @@
-/* Modern flat design - no emojis, clean icons */
+/* Flat design - no gradients, clean icons */
 
 * {
   box-sizing: border-box;
@@ -166,6 +166,10 @@ body {
   transform: translateY(1px);
 }
 
+.swap-btn svg {
+  color: var(--text);
+}
+
 /* Results Section */
 .results-section {
   display: flex;
@@ -183,7 +187,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary);
   border-radius: var(--radius-md);
 }
 
