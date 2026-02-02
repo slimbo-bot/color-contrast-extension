@@ -1,4 +1,4 @@
-// Content script for picking colors from the page
+// Content script for picking colors from page
 let isPicking = false;
 
 function getComputedColor(element, property) {
@@ -21,15 +21,32 @@ function pickColor(event) {
 
   // Get foreground and background colors
   const foreground = rgbToHex(getComputedColor(element, 'color'));
-  const background = rgbToHex(getComputedColor(element, 'background-color'));
+  let background = rgbToHex(getComputedColor(element, 'background-color'));
 
   // If background is transparent, use parent's background
-  if (background === 'transparent' || background === 'rgba(0, 0, 0, 0)') {
-    const parentBg = rgbToHex(getComputedColor(element.parentElement, 'background-color'));
-    if (parentBg && parentBg !== 'transparent') {
-      sendColors(foreground, parentBg);
+  if (!background || background === 'transparent' || background === '#00000000') {
+    const parent = element.parentElement;
+    if (parent) {
+      const parentBg = rgbToHex(getComputedColor(parent, 'background-color'));
+      if (parentBg && parentBg !== 'transparent' && parentBg !== '#00000000') {
+        background = parentBg;
+      }
     }
-  } else if (foreground && background) {
+  }
+
+  // If still no background, try body
+  if (!background || background === 'transparent' || background === '#00000000') {
+    const body = document.body;
+    if (body) {
+      const bodyBg = rgbToHex(getComputedColor(body, 'background-color'));
+      if (bodyBg && bodyBg !== 'transparent' && bodyBg !== '#00000000') {
+        background = bodyBg;
+      }
+    }
+  }
+
+  // If we have both colors, send them
+  if (foreground && background) {
     sendColors(foreground, background);
   }
 
@@ -57,10 +74,11 @@ function stopColorPicking() {
   document.body.removeEventListener('click', pickColor, true);
   document.body.removeEventListener('mouseover', highlightElement, true);
 
-  // Remove any highlights
+  // Remove all highlights
   const highlights = document.querySelectorAll('[data-contrast-highlight]');
   highlights.forEach(el => {
     el.style.outline = '';
+    el.style.outlineOffset = '';
     el.removeAttribute('data-contrast-highlight');
   });
 }
@@ -73,20 +91,22 @@ function highlightElement(event) {
   // Remove previous highlights
   document.querySelectorAll('[data-contrast-highlight]').forEach(el => {
     el.style.outline = '';
+    el.style.outlineOffset = '';
     el.removeAttribute('data-contrast-highlight');
   });
 
   // Add highlight to current element
-  element.style.outline = '3px solid #667eea';
+  element.style.outline = '3px solid #2563eb';
+  element.style.outlineOffset = '2px';
   element.setAttribute('data-contrast-highlight', 'true');
 }
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'startColorPicking') {
+  if (message.action === 'startColorPicking') {
     startColorPicking();
     sendResponse({ success: true });
-  } else if (message.type === 'stopColorPicking') {
+  } else if (message.action === 'stopColorPicking') {
     stopColorPicking();
     sendResponse({ success: true });
   }
@@ -96,5 +116,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && isPicking) {
     stopColorPicking();
+    chrome.runtime.sendMessage({ type: 'colorPickingCancelled' });
   }
 });
+
+// Notify when content script is loaded
+chrome.runtime.sendMessage({ type: 'contentScriptLoaded' });

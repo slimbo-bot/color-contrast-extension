@@ -1,6 +1,5 @@
-// Color contrast calculation utilities
+// Color contrast calculator
 class ColorContrastCalculator {
-  // Convert hex to RGB
   hexToRgb(hex) {
     const cleanHex = hex.replace('#', '');
     const r = parseInt(cleanHex.substr(0, 2), 16);
@@ -9,36 +8,29 @@ class ColorContrastCalculator {
     return { r, g, b };
   }
 
-  // Calculate relative luminance
   getLuminance(r, g, b) {
     const [rs, gs, bs] = [r, g, b].map(c => {
       c = c / 255;
       return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     });
-
     return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
   }
 
-  // Calculate contrast ratio
   getContrastRatio(l1, l2) {
     const lighter = Math.max(l1, l2);
     const darker = Math.min(l1, l2);
     return (lighter + 0.05) / (darker + 0.05);
   }
 
-  // Check WCAG compliance
   checkWCAG(contrastRatio, isLargeText = false) {
-    const results = {
+    return {
       aaNormal: contrastRatio >= 4.5,
       aaLarge: contrastRatio >= 3.0,
       aaaNormal: contrastRatio >= 7.0,
       aaaLarge: contrastRatio >= 4.5
     };
-
-    return results;
   }
 
-  // Calculate all metrics
   calculate(foregroundHex, backgroundHex) {
     const fg = this.hexToRgb(foregroundHex);
     const bg = this.hexToRgb(backgroundHex);
@@ -50,34 +42,31 @@ class ColorContrastCalculator {
 
     return {
       contrastRatio: Math.round(contrastRatio * 100) / 100,
-      luminance: {
-        foreground: Math.round(fgLuminance * 1000) / 1000,
-        background: Math.round(bgLuminance * 1000) / 1000
-      },
       wcag: this.checkWCAG(contrastRatio)
     };
   }
 }
 
-// Main application logic
+// Initialize
 const calculator = new ColorContrastCalculator();
 
 // DOM elements
 const foregroundColor = document.getElementById('foreground-color');
 const foregroundHex = document.getElementById('foreground-hex');
+const foregroundPreview = document.getElementById('foreground-preview');
 const backgroundColor = document.getElementById('background-color');
 const backgroundHex = document.getElementById('background-hex');
+const backgroundPreview = document.getElementById('background-preview');
 const contrastRatio = document.getElementById('contrast-ratio');
 const wcagAANormal = document.getElementById('wcag-aa-normal');
 const wcagAALarge = document.getElementById('wcag-aa-large');
 const wcagAAANormal = document.getElementById('wcag-aaa-normal');
 const wcagAAALarge = document.getElementById('wcag-aaa-large');
 const preview = document.getElementById('preview');
-const previewText = document.querySelector('.preview-text');
 const swapBtn = document.getElementById('swap-colors');
 const pickFromPageBtn = document.getElementById('pick-from-page');
 
-// Update UI with results
+// Update UI
 function updateResults(fgHex, bgHex) {
   const results = calculator.calculate(fgHex, bgHex);
 
@@ -93,23 +82,26 @@ function updateResults(fgHex, bgHex) {
   // Update preview
   preview.style.backgroundColor = bgHex;
   preview.style.color = fgHex;
-  previewText.style.color = fgHex;
+
+  // Update color previews
+  foregroundPreview.style.background = fgHex;
+  backgroundPreview.style.background = bgHex;
 }
 
 function updateWCAGResult(element, passed) {
-  element.textContent = passed ? '✅ PASS' : '❌ FAIL';
-  element.className = 'result ' + (passed ? 'pass' : 'fail');
+  element.textContent = passed ? 'PASS' : 'FAIL';
+  element.className = 'wcag-result ' + (passed ? 'pass' : 'fail');
 }
 
-// Validate hex color
 function isValidHex(hex) {
   return /^#[0-9A-Fa-f]{6}$/.test(hex);
 }
 
-// Sync color picker and text input
-function syncColorInputs(colorPicker, textInput) {
+// Sync color inputs
+function syncColorInputs(colorPicker, textInput, previewElement) {
   colorPicker.addEventListener('input', () => {
     textInput.value = colorPicker.value.toUpperCase();
+    previewElement.style.background = colorPicker.value;
     updateResults(foregroundColor.value, backgroundColor.value);
   });
 
@@ -117,57 +109,93 @@ function syncColorInputs(colorPicker, textInput) {
     const value = textInput.value.toUpperCase();
     if (isValidHex(value)) {
       colorPicker.value = value;
+      previewElement.style.background = value;
       updateResults(foregroundColor.value, backgroundColor.value);
     }
   });
 }
 
-// Initialize color inputs
-syncColorInputs(foregroundColor, foregroundHex);
-syncColorInputs(backgroundColor, backgroundHex);
+// Initialize
+syncColorInputs(foregroundColor, foregroundHex, foregroundPreview);
+syncColorInputs(backgroundColor, backgroundHex, backgroundPreview);
 
-// Swap colors button
+// Swap colors
 swapBtn.addEventListener('click', () => {
   const tempFg = foregroundColor.value;
   const tempBg = backgroundColor.value;
 
   foregroundColor.value = tempBg;
   foregroundHex.value = tempBg.toUpperCase();
+  foregroundPreview.style.background = tempBg;
+
   backgroundColor.value = tempFg;
   backgroundHex.value = tempFg.toUpperCase();
+  backgroundPreview.style.background = tempFg;
 
   updateResults(foregroundColor.value, backgroundColor.value);
 });
 
-// Pick colors from page button
+// Pick colors from page
 pickFromPageBtn.addEventListener('click', async () => {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (tab.url.startsWith('chrome://')) {
-      alert('Cannot pick colors from Chrome pages. Please navigate to a website.');
+    if (!tab || tab.url.startsWith('chrome://')) {
+      alert('Please navigate to a website first.');
       return;
     }
 
+    // Inject content script
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content/content.js']
     });
 
-    // Listen for color selection from content script
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.type === 'colorsSelected') {
-        foregroundColor.value = message.foreground.toUpperCase();
-        foregroundHex.value = message.foreground.toUpperCase();
-        backgroundColor.value = message.background.toUpperCase();
-        backgroundHex.value = message.background.toUpperCase();
-
-        updateResults(foregroundColor.value, backgroundColor.value);
+    // Send message to start picking
+    chrome.tabs.sendMessage(tab.id, { action: 'startColorPicking' }, (response) => {
+      if (chrome.runtime.lastError) {
+        alert('Could not start color picking. Make sure you\'re on a regular website.');
+      } else {
+        // Update button state
+        pickFromPageBtn.textContent = 'Click on page to pick colors';
+        pickFromPageBtn.classList.add('active');
       }
     });
   } catch (error) {
     console.error('Error picking colors:', error);
-    alert('Could not pick colors from page. Please make sure you\'re on a regular website.');
+    alert('Could not pick colors from page.');
+  }
+});
+
+// Listen for color selection from content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'colorsSelected') {
+    foregroundColor.value = message.foreground.toUpperCase();
+    foregroundHex.value = message.foreground.toUpperCase();
+    foregroundPreview.style.background = message.foreground.toUpperCase();
+
+    backgroundColor.value = message.background.toUpperCase();
+    backgroundHex.value = message.background.toUpperCase();
+    backgroundPreview.style.background = message.background.toUpperCase();
+
+    updateResults(foregroundColor.value, backgroundColor.value);
+
+    // Reset button
+    pickFromPageBtn.textContent = '';
+    const iconSvg = pickFromPageBtn.querySelector('svg');
+    const textSpan = document.createElement('span');
+    textSpan.textContent = 'Pick Colors from Page';
+    pickFromPageBtn.appendChild(textSpan);
+    pickFromPageBtn.appendChild(iconSvg);
+    pickFromPageBtn.classList.remove('active');
+
+    sendResponse({ success: true });
+  }
+
+  // Forward messages between popup and content script
+  if (message.action === 'startColorPicking' || message.action === 'stopColorPicking') {
+    // Handle through the existing flow
+    sendResponse({ success: true });
   }
 });
 
