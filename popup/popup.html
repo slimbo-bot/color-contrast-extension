@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Contrast Checker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎨 Color Contrast Checker</h1>
+      <p class="subtitle">WCAG Accessibility Tool</p>
+    </header>
+
+    <!-- Color Inputs -->
+    <div class="color-section">
+      <div class="color-input-group">
+        <label for="foreground">Foreground (Text)</label>
+        <div class="color-picker-wrapper">
+          <input type="color" id="foreground-color" value="#000000">
+          <input type="text" id="foreground-hex" value="#000000" maxlength="7">
+        </div>
+      </div>
+
+      <div class="color-input-group">
+        <label for="background">Background</label>
+        <div class="color-picker-wrapper">
+          <input type="color" id="background-color" value="#FFFFFF">
+          <input type="text" id="background-hex" value="#FFFFFF" maxlength="7">
+        </div>
+      </div>
+
+      <button id="swap-colors" class="swap-btn">🔄 Swap</button>
+    </div>
+
+    <!-- Results -->
+    <div class="results-section">
+      <div class="contrast-ratio">
+        <span class="label">Contrast Ratio:</span>
+        <span class="value" id="contrast-ratio">21:1</span>
+      </div>
+
+      <div class="wcag-results">
+        <div class="wcag-level">
+          <span class="label">WCAG AA (Normal)</span>
+          <span class="result" id="wcag-aa-normal">✅ PASS</span>
+        </div>
+        <div class="wcag-level">
+          <span class="label">WCAG AA (Large)</span>
+          <span class="result" id="wcag-aa-large">✅ PASS</span>
+        </div>
+        <div class="wcag-level">
+          <span class="label">WCAG AAA (Normal)</span>
+          <span class="result" id="wcag-aaa-normal">✅ PASS</span>
+        </div>
+        <div class="wcag-level">
+          <span class="label">WCAG AAA (Large)</span>
+          <span class="result" id="wcag-aaa-large">✅ PASS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-section">
+      <div class="preview-box" id="preview">
+        <span class="preview-text">Sample Text</span>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <h3>💡 Tips</h3>
+      <ul>
+        <li><strong>Quick Test:</strong> Click the eye dropper icon in the color picker to pick colors from the page</li>
+        <li><strong>WCAG Standards:</strong> AA requires 4.5:1 for normal text, 3:1 for large text</li>
+        <li><strong>AAA Level:</strong> Higher standard requiring 7:1 for normal text, 4.5:1 for large text</li>
+      </ul>
+    </div>
+
+    <button id="pick-from-page" class="action-btn">🖱️ Pick Colors from Page</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
