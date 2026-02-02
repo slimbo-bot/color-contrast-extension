@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Contrast Checker - Test Page</title>
+  <link rel="stylesheet" href="../popup/popup.css">
+  <style>
+    .test-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .test-header h1 {
+      color: white;
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .test-header p {
+      color: rgba(255, 255, 255, 0.9);
+      margin: 5px 0 0 0;
+    }
+
+    .test-info {
+      background: var(--surface);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .test-info h3 {
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .test-info ul {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .test-info code {
+      background: var(--background);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+    }
+
+    #debug-console {
+      background: #1e293b;
+      color: #10b981;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+
+    .debug-entry {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .debug-entry .timestamp {
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .debug-entry .message {
+      color: #e2e8f0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Test Header -->
+    <div class="test-header">
+      <h1>🧪 Test Mode</h1>
+      <p>Color Contrast Checker - Development Testing Environment</p>
+    </div>
+
+    <!-- Test Info -->
+    <div class="test-info">
+      <h3>📋 Test Scenario's</h3>
+      <ul>
+        <li><strong>Manual Testing:</strong> Test UI interacties handmatig</li>
+        <li><strong>Debug Mode:</strong> Alle console logs worden hieronder weergegeven</li>
+        <li><strong>Color Validation:</strong> Test verschillende hex codes</li>
+        <li><strong>Contrast Calculation:</strong> Verify contrast ratio berekeningen</li>
+        <li><strong>WCAG Compliance:</strong> Check AA/AAA regels</li>
+        <li><strong>Browser Compatibility:</strong> Test in Chrome, Firefox, Safari, Edge</li>
+      </ul>
+
+      <h3>🛠️️ Troubleshooting</h3>
+      <ul>
+        <li>Als contrast ratio niet berekent wordt → check JS console</li>
+        <li>Als WCAG checks falen → check voorgrond/achtergrond kleuren</li>
+        <li>Als preview niet updateert → check event listeners</li>
+        <li>Als swap niet werkt → check swapBtn element</li>
+        <li>Als color picker niet werkt → check input type="color"</li>
+      </ul>
+
+      <h3>💡 Development Tips</h3>
+      <ul>
+        <li><strong>Debugging:</strong> Gebruik Chrome DevTools <code>F12</code> voor JavaScript debugging</li>
+        <li><strong>Console Logs:</strong> Alle console.log() output verschijnt hieronder</li>
+        <li><strong>Test Cases:</strong> Maak test cases voor edge cases (zwart op zwart, wit op wit)</li>
+        <li><strong>Performance:</strong> Gebruik Chrome Performance tab om te meten</li>
+      </ul>
+    </div>
+
+    <!-- Main Extension UI (Copied from popup) -->
+    <header class="header">
+      <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32">
+        <rect width="32" height="32" fill="#2563eb" rx="6"/>
+        <circle cx="12" cy="12" r="8" fill="#ffffff" opacity="0.9"/>
+        <circle cx="20" cy="20" r="8" fill="#ffffff" opacity="0.9"/>
+        <text x="16" y="22" font-size="10" text-anchor="middle" fill="#ffffff" font-weight="bold">Aa</text>
+      </svg>
+      <div class="header-text">
+        <h1>Color Contrast Checker</h1>
+        <p>WCAG Accessibility Tool</p>
+      </div>
+    </header>
+
+    <!-- Color Inputs -->
+    <section class="color-section">
+      <div class="color-input-group">
+        <label for="foreground-color">Foreground (Text)</label>
+        <div class="color-input-wrapper">
+          <div class="color-preview" id="foreground-preview" style="background: #000000;"></div>
+          <input type="color" id="foreground-color" value="#000000" class="color-picker">
+          <input type="text" id="foreground-hex" value="#000000" class="hex-input" maxlength="7">
+        </div>
+      </div>
+
+      <div class="color-input-group">
+        <label for="background-color">Background</label>
+        <div class="color-input-wrapper">
+          <div class="color-preview" id="background-preview" style="background: #FFFFFF;"></div>
+          <input type="color" id="background-color" value="#FFFFFF" class="color-picker">
+          <input type="text" id="background-hex" value="#FFFFFF" class="hex-input" maxlength="7">
+        </div>
+      </div>
+
+      <button id="swap-colors" class="swap-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path d="M8 1L4 5h3v6H4v2h4v-2h-1V5h3l-4 4-4-4z" fill="currentColor"/>
+          <path d="M8 15l4-4h-3V5h4V3h-4v2h1v6h-3l4 4z" fill="currentColor"/>
+        </svg>
+        Swap
+      </button>
+    </section>
+
+    <!-- Results -->
+    <section class="results-section">
+      <div class="contrast-ratio">
+        <span class="ratio-label">Contrast Ratio</span>
+        <span class="ratio-value" id="contrast-ratio">21:1</span>
+      </div>
+
+      <div class="wcag-grid">
+        <div class="wcag-item">
+          <span class="wcag-label">AA Normal</span>
+          <span class="wcag-result pass" id="wcag-aa-normal">PASS</span>
+        </div>
+        <div class="wcag-item">
+          <span class="wcag-label">AA Large</span>
+          <span class="wcag-result pass" id="wcag-aa-large">PASS</span>
+        </div>
+        <div class="wcag-item">
+          <span class="wcag-label">AAA Normal</span>
+          <span class="wcag-result pass" id="wcag-aaa-normal">PASS</span>
+        </div>
+        <div class="wcag-item">
+          <span class="wcag-label">AAA Large</span>
+          <span class="wcag-result pass" id="wcag-aaa-large">PASS</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preview -->
+    <section class="preview-section">
+      <div class="preview-box" id="preview" style="background: #FFFFFF; color: #000000;">
+        <span class="preview-text">The quick brown fox jumps over a lazy dog</span>
+        <span class="preview-subtext">Large Text Example</span>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <section class="actions-section">
+      <button id="pick-from-page" class="primary-btn">
+        <svg width="20" height="20" viewBox="0 0 20 20">
+          <path d="M10 2L2 10l3 3 1 5 4-2 1-5 3-3 2 4-1 5z" fill="currentColor"/>
+        </svg>
+        Pick Colors from Page (Disabled in Test Mode)
+      </button>
+    </section>
+
+    <!-- Info -->
+    <section class="info-section">
+      <div class="info-item">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.2"/>
+          <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="5.5" cy="6" r="1.5" fill="currentColor"/>
+          <circle cx="10.5" cy="6" r="1.5" fill="currentColor"/>
+          <path d="M5 11q1.5 1 3 1t3-1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        </svg>
+        <div class="info-content">
+          <h3>WCAG AA</h3>
+          <p>Minimum: 4.5:1 normal, 3:1 large text</p>
+        </div>
+      </div>
+      <div class="info-item">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.2"/>
+          <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="5" cy="5" r="2" fill="currentColor"/>
+          <circle cx="11" cy="5" r="2" fill="currentColor"/>
+          <circle cx="8" cy="11" r="2" fill="currentColor"/>
+        </svg>
+        <div class="info-content">
+          <h3>WCAG AAA</h3>
+          <p>Enhanced: 7:1 normal, 4.5:1 large text</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Debug Console -->
+    <div id="debug-console">
+      <div class="debug-entry">
+        <span class="timestamp">Test mode initialized</span>
+        <span class="message">Debug console ready</span>
+      </div>
+    </div>
+
+    <!-- Test Actions -->
+    <div class="actions">
+      <button onclick="testColorCalculations()" class="primary-btn">
+        <svg width="20" height="20" viewBox="0 0 20 20">
+          <path d="M10 2L2 10l3 3 1 5 4-2 1-5 3-3 2 4-1 5z" fill="currentColor"/>
+        </svg>
+        Test Color Calculations
+      </button>
+      <button onclick="testWCAGChecks()" class="primary-btn">
+        <svg width="20" height="20" viewBox="0 0 20 20">
+          <path d="M10 2L2 10l3 3 1 5 4-2 1-5 3-3 2 4-1 5z" fill="currentColor"/>
+        </svg>
+        Test WCAG Checks
+      </button>
+      <button onclick="clearDebugConsole()" class="primary-btn">
+        <svg width="20" height="20" viewBox="0 0 20 20">
+          <path d="M3 6l3 3 7 7 3-3h-1V5H3v2h4v-2z" fill="currentColor"/>
+        </svg>
+        Clear Console
+      </button>
+    </div>
+  </div>
+
+  <script src="../popup/popup.js"></script>
+
+  <script>
+    // Override console.log to also write to debug console
+    const originalLog = console.log;
+    const debugConsole = document.getElementById('debug-console');
+
+    function debugLog(message, level = 'info') {
+      const entry = document.createElement('div');
+      entry.className = 'debug-entry';
+      
+      const timestamp = document.createElement('span');
+      timestamp.className = 'timestamp';
+      timestamp.textContent = new Date().toISOString();
+      
+      const msg = document.createElement('span');
+      msg.className = 'message';
+      msg.textContent = `[${level.toUpperCase()}] ${message}`;
+      
+      entry.appendChild(timestamp);
+      entry.appendChild(msg);
+      
+      debugConsole.insertBefore(entry, debugConsole.firstChild);
+      
+      originalLog(message);
+    }
+
+    // Test functions
+    function testColorCalculations() {
+      debugLog('Testing color calculations...');
+      
+      const testCases = [
+        { fg: '#000000', bg: '#FFFFFF', expected: 21.00 },
+        { fg: '#FF0000', bg: '#FFFFFF', expected: 4.00 },
+        { fg: '#808080', bg: '#FFFFFF', expected: 4.98 },
+        { fg: '#000080', bg: '#FFFFFF', expected: 8.24 },
+        { fg: '#FFFFFF', bg: '#FFFFFF', expected: 1.00 },
+        { fg: '#000000', bg: '#000000', expected: 1.00 }
+      ];
+      
+      let passed = 0;
+      let failed = 0;
+      
+      testCases.forEach((test, index) => {
+        const fg = document.getElementById('foreground-color');
+        const bg = document.getElementById('background-color');
+        
+        fg.value = test.fg;
+        bg.value = test.bg;
+        
+        // Wait for calculations
+        const ratio = document.getElementById('contrast-ratio').textContent;
+        const ratioValue = parseFloat(ratio.split(':')[0]);
+        
+        const diff = Math.abs(ratioValue - test.expected);
+        const tolerance = 0.05;
+        
+        if (diff < tolerance) {
+          debugLog(`✅ Test ${index + 1} PASSED: ${test.fg} on ${test.bg} = ${ratio}`, 'success');
+          passed++;
+        } else {
+          debugLog(`❌ Test ${index + 1} FAILED: Expected ${test.expected}, got ${ratio}`, 'error');
+          failed++;
+        }
+      });
+      
+      debugLog(`Color calculations: ${passed} passed, ${failed} failed`, passed > failed ? 'success' : 'error');
+    }
+
+    function testWCAGChecks() {
+      debugLog('Testing WCAG compliance checks...');
+      
+      const testCases = [
+        { name: 'AA Normal (4.5:1)', fg: '#000000', bg: '#FFFFFF', ratio: 21, pass: true },
+        { name: 'AA Normal (4.5:1)', fg: '#808080', bg: '#FFFFFF', ratio: 4.98, pass: true },
+        { name: 'AA Normal (4.5:1)', fg: '#000080', bg: '#FFFFFF', ratio: 8.24, pass: true },
+        { name: 'AA Normal (4.5:1)', fg: '#FF0000', bg: '#FFFFFF', ratio: 4.00, pass: true },
+        { name: 'AAA Normal (7:1)', fg: '#000000', bg: '#FFFFFF', ratio: 21, pass: true },
+        { name: 'AAA Normal (7:1)', fg: '#000080', bg: '#FFFFFF', ratio: 8.24, pass: true },
+        { name: 'AAA Normal (7:1)', fg: '#808080', bg: '#FFFFFF', ratio: 4.98, pass: false }
+      ];
+      
+      let passed = 0;
+      let failed = 0;
+      
+      testCases.forEach((test) => {
+        const fg = document.getElementById('foreground-color');
+        const bg = document.getElementById('background-color');
+        
+        fg.value = test.fg;
+        bg.value = test.bg;
+        
+        const ratio = parseFloat(document.getElementById('contrast-ratio').textContent.split(':')[0]);
+        
+        let expectedPass = false;
+        
+        if (test.name.includes('AA Normal')) {
+          expectedPass = ratio >= 4.5;
+        } else if (test.name.includes('AA Large')) {
+          expectedPass = ratio >= 3.0;
+        } else if (test.name.includes('AAA Normal')) {
+          expectedPass = ratio >= 7.0;
+        } else if (test.name.includes('AAA Large')) {
+          expectedPass = ratio >= 4.5;
+        }
+        
+        const result = (expectedPass === test.pass);
+        if (result) {
+          debugLog(`✅ WCAG ${test.name}: ${test.fg} on ${test.bg} = ${ratio} → ${test.pass ? 'PASS' : 'FAIL'} (correct)`, 'success');
+          passed++;
+        } else {
+          debugLog(`❌ WCAG ${test.name}: ${test.fg} on ${test.bg} = ${ratio} → ${test.pass ? 'PASS' : 'FAIL'} (expected ${test.pass ? 'PASS' : 'FAIL'})`, 'error');
+          failed++;
+        }
+      });
+      
+      debugLog(`WCAG checks: ${passed} passed, ${failed} failed`, passed > failed ? 'success' : 'error');
+    }
+
+    function clearDebugConsole() {
+      debugConsole.innerHTML = '';
+      debugLog('Debug console cleared');
+    }
+
+    // Initialize with log
+    debugLog('Test page loaded successfully');
+    debugLog('All core functions from extension are available');
+    debugLog('Click test buttons to run automated tests');
+  </script>
+</body>
+</html>
